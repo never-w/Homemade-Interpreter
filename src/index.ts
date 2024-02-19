@@ -1,1 +1,1 @@
-console.log('interpreter 2')
+console.log("interpreter 2")
