@@ -1,16 +1,17 @@
-import { Token, TokenType, TokenTypes } from '../token/token'
+import { isLetter, newToken } from '../helpers/helpers'
+import { Token, TokenTypes, lookupIdent } from '../token/token'
 
 export class Lexer {
   private input: string
   private position: number
   private readPosition: number
-  private ch: string | null
+  private ch: string
 
   constructor(input: string) {
     this.input = input
     this.position = 0
     this.readPosition = 0
-    this.ch = null
+    this.ch = ''
   }
 
   static newLexer(input: string): Lexer {
@@ -21,7 +22,7 @@ export class Lexer {
 
   private readChar() {
     if (this.readPosition >= this.input.length) {
-      this.ch = null
+      this.ch = ''
     } else {
       this.ch = this.input[this.readPosition]
     }
@@ -34,43 +35,58 @@ export class Lexer {
       type: TokenTypes.EOF,
       literal: '',
     }
+    this.skipWhitespace()
 
     switch (this.ch) {
       case '=':
-        token = this.newToken(TokenTypes.ASSIGN, this.ch)
+        token = newToken(TokenTypes.ASSIGN, this.ch)
         break
       case ';':
-        token = this.newToken(TokenTypes.SEMICOLON, this.ch)
+        token = newToken(TokenTypes.SEMICOLON, this.ch)
         break
       case '(':
-        token = this.newToken(TokenTypes.LPAREN, this.ch)
+        token = newToken(TokenTypes.LPAREN, this.ch)
         break
       case ')':
-        token = this.newToken(TokenTypes.RPAREN, this.ch)
+        token = newToken(TokenTypes.RPAREN, this.ch)
         break
       case ',':
-        token = this.newToken(TokenTypes.COMMA, this.ch)
+        token = newToken(TokenTypes.COMMA, this.ch)
         break
       case '+':
-        token = this.newToken(TokenTypes.PLUS, this.ch)
+        token = newToken(TokenTypes.PLUS, this.ch)
         break
       case '{':
-        token = this.newToken(TokenTypes.LBRACE, this.ch)
+        token = newToken(TokenTypes.LBRACE, this.ch)
         break
       case '}':
-        token = this.newToken(TokenTypes.RBRACE, this.ch)
+        token = newToken(TokenTypes.RBRACE, this.ch)
         break
       default:
+        if (isLetter(this.ch)) {
+          token.literal = this.readIdentifier()
+          token.type = lookupIdent(token.literal)
+          return token
+        } else {
+          token = newToken(TokenTypes.ILLEGAL, this.ch)
+        }
         break
     }
     this.readChar()
     return token
   }
 
-  private newToken(tokenType: TokenType, ch: string): Token {
-    return {
-      type: tokenType,
-      literal: ch,
+  private readIdentifier() {
+    const position = this.position
+    while (isLetter(this.ch)) {
+      this.readChar()
+    }
+    return this.input.slice(position, this.position)
+  }
+
+  private skipWhitespace() {
+    while (this.ch === ' ' || this.ch === '\t' || this.ch === '\n' || this.ch === '\n') {
+      this.readChar()
     }
   }
 }
