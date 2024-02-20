@@ -109,8 +109,8 @@ describe('Lexer', () => {
 
       { expectedType: TokenTypes.EOF, expectedLiteral: '' },
     ]
-    const lexer = Lexer.newLexer(input)
 
+    const lexer = Lexer.newLexer(input)
     for (const test of tests) {
       const curToken = lexer.nextToken()
       expect(curToken.type).toEqual(test.expectedType)
