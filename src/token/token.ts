@@ -6,6 +6,16 @@ export const TokenTypes = {
 
   ASSIGN: '=',
   PLUS: '+',
+  MINUS: '-',
+  BANG: '!',
+  ASTERISK: '*',
+  SLASH: '/',
+
+  LT: '<',
+  GT: '>',
+
+  EQ: '==',
+  NOT_EQ: '!=',
 
   COMMA: ',',
   SEMICOLON: ';',
@@ -17,6 +27,11 @@ export const TokenTypes = {
 
   FUNCTION: 'FUNCTION',
   LET: 'LET',
+  TRUE: 'TRUE',
+  FALSE: 'FALSE',
+  IF: 'IF',
+  ELSE: 'ELSE',
+  RETURN: 'RETURN',
 
   ILLEGAL: 'ILLEGAL',
   EOF: 'EOF',
@@ -25,6 +40,11 @@ export const TokenTypes = {
 const keywords = {
   fn: newToken(TokenTypes.FUNCTION, 'fn'),
   let: newToken(TokenTypes.LET, 'let'),
+  true: newToken(TokenTypes.TRUE, 'true'),
+  false: newToken(TokenTypes.FALSE, 'false'),
+  if: newToken(TokenTypes.IF, 'if'),
+  else: newToken(TokenTypes.ELSE, 'else'),
+  return: newToken(TokenTypes.RETURN, 'return'),
 } as const
 
 export type TokenType = (typeof TokenTypes)[keyof typeof TokenTypes]

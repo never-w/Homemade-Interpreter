@@ -39,7 +39,14 @@ export class Lexer {
 
     switch (this.ch) {
       case '=':
-        token = newToken(TokenTypes.ASSIGN, this.ch)
+        // 处理 ==
+        if (this.peekChar() === '=') {
+          const ch = this.ch
+          this.readChar()
+          token = newToken(TokenTypes.EQ, `${ch}${this.ch}`)
+        } else {
+          token = newToken(TokenTypes.ASSIGN, this.ch)
+        }
         break
       case ';':
         token = newToken(TokenTypes.SEMICOLON, this.ch)
@@ -62,6 +69,31 @@ export class Lexer {
       case '}':
         token = newToken(TokenTypes.RBRACE, this.ch)
         break
+      case '-':
+        token = newToken(TokenTypes.MINUS, this.ch)
+        break
+      case '!':
+        // 处理 !=
+        if (this.peekChar() === '=') {
+          const ch = this.ch
+          this.readChar()
+          token = newToken(TokenTypes.NOT_EQ, `${ch}${this.ch}`)
+        } else {
+          token = newToken(TokenTypes.BANG, this.ch)
+        }
+        break
+      case '*':
+        token = newToken(TokenTypes.ASTERISK, this.ch)
+        break
+      case '/':
+        token = newToken(TokenTypes.SLASH, this.ch)
+        break
+      case '<':
+        token = newToken(TokenTypes.LT, this.ch)
+        break
+      case '>':
+        token = newToken(TokenTypes.GT, this.ch)
+        break
       case '':
         return token
       default:
@@ -78,6 +110,7 @@ export class Lexer {
         }
         break
     }
+
     this.readChar()
     return token
   }
@@ -101,6 +134,14 @@ export class Lexer {
   private skipWhitespace() {
     while (this.ch === ' ' || this.ch === '\t' || this.ch === '\r' || this.ch === '\n') {
       this.readChar()
+    }
+  }
+
+  private peekChar() {
+    if (this.readPosition >= this.input.length) {
+      return ''
+    } else {
+      return this.input[this.readPosition]
     }
   }
 }
