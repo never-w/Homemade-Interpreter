@@ -1,4 +1,4 @@
-import { isLetter, newToken } from '../helpers/helpers'
+import { isDigit, isLetter, newToken } from '../helpers/helpers'
 import { Token, TokenTypes, lookupIdent } from '../token/token'
 
 export class Lexer {
@@ -62,10 +62,16 @@ export class Lexer {
       case '}':
         token = newToken(TokenTypes.RBRACE, this.ch)
         break
+      case '':
+        return token
       default:
         if (isLetter(this.ch)) {
           token.literal = this.readIdentifier()
           token.type = lookupIdent(token.literal)
+          return token
+        } else if (isDigit(this.ch)) {
+          token.type = TokenTypes.INT
+          token.literal = this.readNumber()
           return token
         } else {
           token = newToken(TokenTypes.ILLEGAL, this.ch)
@@ -84,8 +90,16 @@ export class Lexer {
     return this.input.slice(position, this.position)
   }
 
+  private readNumber() {
+    const position = this.position
+    while (isDigit(this.ch)) {
+      this.readChar()
+    }
+    return this.input.slice(position, this.position)
+  }
+
   private skipWhitespace() {
-    while (this.ch === ' ' || this.ch === '\t' || this.ch === '\n' || this.ch === '\n') {
+    while (this.ch === ' ' || this.ch === '\t' || this.ch === '\r' || this.ch === '\n') {
       this.readChar()
     }
   }
