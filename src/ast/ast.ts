@@ -12,7 +12,7 @@ interface Expression extends ASTNode {
   expressionNode(): void
 }
 
-class Program implements ASTNode {
+export class Program implements ASTNode {
   private statements: Statement[]
 
   constructor(statements: Statement[]) {
@@ -38,7 +38,7 @@ class LetStatement implements Statement {
     this.value = value
   }
 
-  statementNode() {}
+  statementNode(): void {}
 
   tokenLiteral(): string {
     return this.token.literal
