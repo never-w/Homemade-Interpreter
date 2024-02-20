@@ -7,7 +7,7 @@ export class Lexer {
   private readPosition: number
   private ch: string
 
-  constructor(input: string) {
+  private constructor(input: string) {
     this.input = input
     this.position = 0
     this.readPosition = 0

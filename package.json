@@ -1,12 +1,12 @@
 {
   "name": "homemade-interpreter",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "repl/repl.ts",
   "repository": "https://github.com/never-w/Homemade-Interpreter.git",
   "author": "never-w <1737666820@qq.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon src/repl/repl.ts",
     "test": "vitest"
   },
   "devDependencies": {
