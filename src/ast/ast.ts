@@ -1,4 +1,4 @@
-import { Token } from '../token/token'
+import { Token, TokenType } from '../token/token'
 
 interface ASTNode {
   tokenLiteral(): string
@@ -65,6 +65,25 @@ export class Identifier implements Expression {
   }
 
   expressionNode(): void {}
+
+  tokenLiteral(): string {
+    return this.token.literal
+  }
+}
+
+export class ReturnStatement implements Statement {
+  private token: Token
+  returnValue?: Expression
+
+  private constructor(token: Token) {
+    this.token = token
+  }
+
+  static new(token: Token): ReturnStatement {
+    return new ReturnStatement(token)
+  }
+
+  statementNode(): void {}
 
   tokenLiteral(): string {
     return this.token.literal
