@@ -19,7 +19,7 @@ describe('Parser', () => {
 
     tests.forEach((expected, index) => {
       const stmt = program?.statements[index]
-      expect(testLetStatement(stmt!, expected)).toBeTruthy()
+      expect(testLetStatement(stmt, expected)).toBeTruthy()
     })
   })
 })
@@ -29,7 +29,7 @@ function testLetStatement(stmt: Statement, expected: string) {
     !stmt ||
     stmt.tokenLiteral() !== 'let' ||
     !(stmt instanceof LetStatement) ||
-    stmt.name.value !== expected ||
+    stmt.name?.value !== expected ||
     stmt.name.tokenLiteral() !== expected
   ) {
     return false
