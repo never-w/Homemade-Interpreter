@@ -33,7 +33,7 @@ export const TokenTypes = {
   ELSE: 'ELSE',
   RETURN: 'RETURN',
 
-  /** 非法的 */
+  /** 非法的  */
   ILLEGAL: 'ILLEGAL',
   /** End Of File */
   EOF: 'EOF',
