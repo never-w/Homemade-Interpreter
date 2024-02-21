@@ -6,9 +6,11 @@ export class Parser {
   private lexer: Lexer
   private curToken?: Token
   private peekToken?: Token
+  private errors: string[]
 
   private constructor(lexer: Lexer) {
     this.lexer = lexer
+    this.errors = []
   }
 
   static newParser(lexer: Lexer): Parser {
@@ -27,7 +29,7 @@ export class Parser {
   parseProgram(): Program {
     const program = Program.new()
 
-    while (this.curToken?.type !== TokenTypes.EOF) {
+    while (!this.curTokenIs(TokenTypes.EOF)) {
       const stmt = this.parseStatement()
       if (stmt) program.statements.push(stmt)
       this.nextToken()
@@ -74,10 +76,20 @@ export class Parser {
       this.nextToken()
       return true
     }
+    this.peekError(t)
     return false
   }
 
   private peekTokenIs(t: TokenType): boolean {
     return this.peekToken?.type === t
+  }
+
+  getErrors(): string[] {
+    return this.errors
+  }
+
+  private peekError(t: TokenType) {
+    const msg = `expected next token to be ${t}, got ${this.peekToken?.type} instead`
+    this.errors.push(msg)
   }
 }
