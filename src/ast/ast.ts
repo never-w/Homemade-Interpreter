@@ -1,4 +1,4 @@
-import { Token, TokenType } from '../token/token'
+import { Token } from '../token/token'
 
 interface ASTNode {
   tokenLiteral(): string

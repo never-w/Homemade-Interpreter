@@ -49,7 +49,8 @@ const keywords = {
   return: newToken(TokenTypes.RETURN, 'return'),
 } as const
 
-export type TokenType = (typeof TokenTypes)[keyof typeof TokenTypes]
+type ValueOf<T> = T[keyof T]
+export type TokenType = ValueOf<typeof TokenTypes>
 
 export type Token = {
   type: TokenType
