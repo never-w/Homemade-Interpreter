@@ -5,7 +5,7 @@ import { Identifier } from './identifier'
 export class LetStatement implements Statement {
   private token: Token
   name?: Identifier
-  private value?: Expression
+  value?: Expression
 
   private constructor(token: Token) {
     this.token = token
@@ -19,5 +19,19 @@ export class LetStatement implements Statement {
 
   tokenLiteral(): string {
     return this.token.literal
+  }
+
+  string(): string {
+    let out = ''
+    out += this.tokenLiteral() + ' '
+    out += this.name?.string()
+    out += ' = '
+
+    if (this.value) {
+      out += this.value.string()
+    }
+    out += ';'
+
+    return out
   }
 }

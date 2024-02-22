@@ -18,4 +18,16 @@ export class ReturnStatement implements Statement {
   tokenLiteral(): string {
     return this.token.literal
   }
+
+  string(): string {
+    let out = ''
+    out += this.tokenLiteral() + ' '
+
+    if (this.returnValue) {
+      out += this.returnValue
+    }
+    out += ';'
+
+    return out
+  }
 }
