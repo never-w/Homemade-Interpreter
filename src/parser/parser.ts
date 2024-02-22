@@ -1,4 +1,8 @@
-import { Identifier, LetStatement, Program, ReturnStatement, Statement } from '../ast/ast'
+import { Statement } from '../ast/ast'
+import { Identifier } from '../ast/identifier'
+import { LetStatement } from '../ast/letStatement'
+import { Program } from '../ast/program'
+import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Token, TokenType, TokenTypes } from '../token/token'
 

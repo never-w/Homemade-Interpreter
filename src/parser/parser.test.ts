@@ -1,4 +1,6 @@
-import { LetStatement, ReturnStatement, Statement } from '../ast/ast'
+import { Statement } from '../ast/ast'
+import { LetStatement } from '../ast/letStatement'
+import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Parser } from './parser'
 
