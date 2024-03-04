@@ -1,4 +1,4 @@
-import { Statement } from '../ast/ast'
+import { Expression, Statement } from '../ast/ast'
 import { ExpressionStatement } from '../ast/expressionStatement'
 import { Identifier } from '../ast/identifier'
 import { IntegerLiteral } from '../ast/integerLiteral'
@@ -92,6 +92,30 @@ describe('Parser', () => {
     expect(integerLiteral.value).toEqual(5)
     expect(integerLiteral.tokenLiteral()).toEqual('5')
   })
+
+  it('should parse prefix expressions', () => {
+    const prefixTests = [
+      ['!5;', '!', 5],
+      ['-15;', '-', 15],
+    ] as const
+
+    for (const [input, expectedOperator, expectedInteger] of prefixTests) {
+      const lexer = Lexer.newLexer(input)
+      const parser = Parser.newParser(lexer)
+      const program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      expect(program.statements).toHaveLength(1)
+      expect(program.statements[0] instanceof ExpressionStatement).toBeTruthy()
+
+      const prefixExp = (program.statements[0] as ExpressionStatement).expression
+      expect(prefixExp instanceof PrefixExpression)
+      const prefix = prefixExp as PrefixExpression
+
+      expect(prefix.operator).toEqual(expectedOperator)
+      expect(testIntegerLiteral(prefix.right, expectedInteger)).toBeTruthy()
+    }
+  })
 })
 
 function testLetStatement(stmt: Statement, expected: string) {
@@ -115,4 +139,16 @@ function checkParserErrors(parser: Parser): boolean {
     console.error(`parser error: ${error}`)
   }
   return !!errors.length
+}
+
+function testIntegerLiteral(it: Expression, value: number): boolean {
+  if (!(it instanceof IntegerLiteral)) return false
+
+  const ilExp = it as IntegerLiteral
+
+  if (ilExp.value !== value) return false
+
+  if (ilExp.tokenLiteral() !== `${value}`) return false
+
+  return true
 }
