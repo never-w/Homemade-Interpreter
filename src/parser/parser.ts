@@ -1,5 +1,7 @@
 import { Expression, Statement } from '../ast/ast'
+import { ExpressionStatement } from '../ast/expressionStatement'
 import { Identifier } from '../ast/identifier'
+import { IntegerLiteral } from '../ast/integerLiteral'
 import { LetStatement } from '../ast/letStatement'
 import { Program } from '../ast/program'
 import { ReturnStatement } from '../ast/returnStatement'
@@ -8,6 +10,16 @@ import { Token, TokenType, TokenTypes } from '../token/token'
 
 type PrefixParseFn = () => Expression
 type InfixParseFn = (expression: Expression) => Expression
+
+enum PrecedenceTable {
+  LOWEST = 1,
+  EQUALS,
+  LESSGREATER,
+  SUM,
+  PRODUCT,
+  PREFIX,
+  CALL,
+}
 
 export class Parser {
   private lexer: Lexer
@@ -26,6 +38,9 @@ export class Parser {
     const parser = new Parser(lexer)
     parser.nextToken()
     parser.nextToken()
+
+    parser.registerPrefix(TokenTypes.IDENT, parser.parseIdentifier)
+    parser.registerPrefix(TokenTypes.INT, parser.parseIntegerLiteral)
 
     return parser
   }
@@ -54,7 +69,7 @@ export class Parser {
       case TokenTypes.RETURN:
         return this.parseReturnStatement()
       default:
-        return null
+        return this.parseExpressionStatement()
     }
   }
 
@@ -121,5 +136,42 @@ export class Parser {
 
   private registerInfix(tokenType: TokenType, fn: InfixParseFn) {
     this.infixParseFns.set(tokenType, fn)
+  }
+
+  private parseExpressionStatement(): ExpressionStatement {
+    const stmt = ExpressionStatement.new(this.curToken!)
+
+    stmt.expression = this.parseExpression(PrecedenceTable.LOWEST)
+
+    if (this.peekTokenIs(TokenTypes.SEMICOLON)) {
+      this.nextToken()
+    }
+
+    return stmt
+  }
+
+  private parseExpression(precedence: number): Expression | undefined {
+    const prefix = this.prefixParseFns.get(this.curToken!.type)?.bind(this)
+
+    if (!prefix) return
+
+    const leftExp = prefix()
+    return leftExp
+  }
+
+  private parseIdentifier(): Expression {
+    return Identifier.new(this.curToken!, this.curToken!.literal)
+  }
+
+  private parseIntegerLiteral(): Expression {
+    const lit = IntegerLiteral.new(this.curToken!)
+    const value = parseInt(this.curToken?.literal!)
+    if (isNaN(value)) {
+      const msg = `could not parse ${this.curToken?.literal} as integer`
+      this.errors.push(msg)
+    }
+
+    lit.value = value
+    return lit
   }
 }

@@ -1,13 +1,16 @@
 import { Token } from '../token/token'
 import { Expression, Statement } from './ast'
 
-class ExpressionStatement implements Statement {
+export class ExpressionStatement implements Statement {
   private token: Token
-  private expression: Expression
+  expression?: Expression
 
-  constructor(token: Token, expression: Expression) {
+  private constructor(token: Token) {
     this.token = token
-    this.expression = expression
+  }
+
+  static new(token: Token): ExpressionStatement {
+    return new ExpressionStatement(token)
   }
 
   statementNode(): void {}
