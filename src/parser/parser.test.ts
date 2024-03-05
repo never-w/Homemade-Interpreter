@@ -1,6 +1,7 @@
 import { Expression, Statement } from '../ast/ast'
 import { ExpressionStatement } from '../ast/expressionStatement'
 import { Identifier } from '../ast/identifier'
+import { InfixExpression } from '../ast/infixExpression'
 import { IntegerLiteral } from '../ast/integerLiteral'
 import { LetStatement } from '../ast/letStatement'
 import { PrefixExpression } from '../ast/prefixExpression'

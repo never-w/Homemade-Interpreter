@@ -1,6 +1,7 @@
 import { Expression, Statement } from '../ast/ast'
 import { ExpressionStatement } from '../ast/expressionStatement'
 import { Identifier } from '../ast/identifier'
+import { InfixExpression } from '../ast/infixExpression'
 import { IntegerLiteral } from '../ast/integerLiteral'
 import { LetStatement } from '../ast/letStatement'
 import { PrefixExpression } from '../ast/prefixExpression'
@@ -21,6 +22,16 @@ enum PrecedenceTable {
   PREFIX,
   CALL,
 }
+
+const precedences = new Map<TokenType, PrecedenceTable>()
+precedences.set(TokenTypes.EQ, PrecedenceTable.EQUALS)
+precedences.set(TokenTypes.NOT_EQ, PrecedenceTable.EQUALS)
+precedences.set(TokenTypes.LT, PrecedenceTable.LESSGREATER)
+precedences.set(TokenTypes.GT, PrecedenceTable.LESSGREATER)
+precedences.set(TokenTypes.PLUS, PrecedenceTable.SUM)
+precedences.set(TokenTypes.MINUS, PrecedenceTable.SUM)
+precedences.set(TokenTypes.SLASH, PrecedenceTable.PRODUCT)
+precedences.set(TokenTypes.ASTERISK, PrecedenceTable.PRODUCT)
 
 export class Parser {
   private lexer: Lexer
@@ -44,6 +55,15 @@ export class Parser {
     parser.registerPrefix(TokenTypes.INT, parser.parseIntegerLiteral)
     parser.registerPrefix(TokenTypes.BANG, parser.parsePrefixExpression)
     parser.registerPrefix(TokenTypes.MINUS, parser.parsePrefixExpression)
+
+    parser.registerInfix(TokenTypes.PLUS, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.MINUS, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.SLASH, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.ASTERISK, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.EQ, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.NOT_EQ, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.LT, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.GT, parser.parseInfixExpression)
 
     return parser
   }
@@ -161,7 +181,13 @@ export class Parser {
       return
     }
 
-    const leftExp = prefix()
+    let leftExp = prefix()
+    while (!this.peekTokenIs(TokenTypes.SEMICOLON) && precedence < this.peekPrecedence()) {
+      const infix = this.infixParseFns.get(this.peekToken?.type!)?.bind(this)
+      if (!infix) return leftExp
+      this.nextToken()
+      leftExp = infix(leftExp)
+    }
     return leftExp
   }
 
@@ -190,6 +216,26 @@ export class Parser {
     const expression = PrefixExpression.new(this.curToken!, this.curToken?.literal!)
     this.nextToken()
     expression.right = this.parseExpression(PrecedenceTable.PREFIX)
+    return expression
+  }
+
+  private peekPrecedence(): number {
+    const precedence = precedences.get(this.peekToken?.type!)
+    if (precedence) return precedence
+    return PrecedenceTable.LOWEST
+  }
+
+  private curPrecedence(): number {
+    const precedence = precedences.get(this.curToken?.type!)
+    if (precedence) return precedence
+    return PrecedenceTable.LOWEST
+  }
+
+  private parseInfixExpression(left: Expression): Expression {
+    const expression = InfixExpression.new(this.curToken!, left, this.curToken?.literal!)
+    const precedence = this.curPrecedence()
+    this.nextToken()
+    expression.right = this.parseExpression(precedence)
     return expression
   }
 }
