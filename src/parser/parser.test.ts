@@ -3,6 +3,7 @@ import { ExpressionStatement } from '../ast/expressionStatement'
 import { Identifier } from '../ast/identifier'
 import { IntegerLiteral } from '../ast/integerLiteral'
 import { LetStatement } from '../ast/letStatement'
+import { PrefixExpression } from '../ast/prefixExpression'
 import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Parser } from './parser'
@@ -113,7 +114,41 @@ describe('Parser', () => {
       const prefix = prefixExp as PrefixExpression
 
       expect(prefix.operator).toEqual(expectedOperator)
-      expect(testIntegerLiteral(prefix.right, expectedInteger)).toBeTruthy()
+      expect(testIntegerLiteral(prefix.right!, expectedInteger)).toBeTruthy()
+    }
+  })
+
+  it('should parse infix expressions', () => {
+    const infixTests = [
+      ['5 + 5', 5, '+', 5],
+      ['5 - 5', 5, '-', 5],
+      ['5 * 5', 5, '*', 5],
+      ['5 / 5', 5, '/', 5],
+      ['5 > 5', 5, '>', 5],
+      ['5 < 5', 5, '<', 5],
+      ['5 == 5', 5, '==', 5],
+      ['5 != 5', 5, '!=', 5],
+      // ['true == true', true, '==', true],
+      // ['true != false', true, '!=', false],
+      // ['false == false', false, '==', false],
+    ] as const
+
+    for (const [input, expectedLeft, expectedOperator, expectedRight] of infixTests) {
+      const lexer = Lexer.newLexer(input as string)
+      const parser = Parser.newParser(lexer)
+      const program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      expect(program.statements).toHaveLength(1)
+      expect(program.statements[0] instanceof ExpressionStatement).toBeTruthy()
+
+      const infixExp = (program.statements[0] as ExpressionStatement).expression
+      expect(infixExp instanceof InfixExpression)
+      const infix = infixExp as InfixExpression
+
+      expect(testIntegerLiteral(infix.left!, expectedLeft as number)).toBeTruthy()
+      expect(infix.operator).toEqual(expectedOperator as string)
+      expect(testIntegerLiteral(infix.right!, expectedRight as number)).toBeTruthy()
     }
   })
 })

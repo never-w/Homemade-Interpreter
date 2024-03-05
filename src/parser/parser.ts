@@ -3,6 +3,7 @@ import { ExpressionStatement } from '../ast/expressionStatement'
 import { Identifier } from '../ast/identifier'
 import { IntegerLiteral } from '../ast/integerLiteral'
 import { LetStatement } from '../ast/letStatement'
+import { PrefixExpression } from '../ast/prefixExpression'
 import { Program } from '../ast/program'
 import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
@@ -41,6 +42,8 @@ export class Parser {
 
     parser.registerPrefix(TokenTypes.IDENT, parser.parseIdentifier)
     parser.registerPrefix(TokenTypes.INT, parser.parseIntegerLiteral)
+    parser.registerPrefix(TokenTypes.BANG, parser.parsePrefixExpression)
+    parser.registerPrefix(TokenTypes.MINUS, parser.parsePrefixExpression)
 
     return parser
   }
@@ -153,7 +156,10 @@ export class Parser {
   private parseExpression(precedence: number): Expression | undefined {
     const prefix = this.prefixParseFns.get(this.curToken!.type)?.bind(this)
 
-    if (!prefix) return
+    if (!prefix) {
+      this.noPrefixParseFnError(this.curToken?.type!)
+      return
+    }
 
     const leftExp = prefix()
     return leftExp
@@ -173,5 +179,17 @@ export class Parser {
 
     lit.value = value
     return lit
+  }
+
+  private noPrefixParseFnError(t: TokenType) {
+    const msg = `no prefix parse function for ${t} found`
+    this.errors.push(msg)
+  }
+
+  private parsePrefixExpression(): Expression {
+    const expression = PrefixExpression.new(this.curToken!, this.curToken?.literal!)
+    this.nextToken()
+    expression.right = this.parseExpression(PrecedenceTable.PREFIX)
+    return expression
   }
 }
