@@ -24,13 +24,21 @@ enum PrecedenceTable {
 }
 
 const precedences = new Map<TokenType, PrecedenceTable>()
+// == 2
 precedences.set(TokenTypes.EQ, PrecedenceTable.EQUALS)
+// != 2
 precedences.set(TokenTypes.NOT_EQ, PrecedenceTable.EQUALS)
+// < 3
 precedences.set(TokenTypes.LT, PrecedenceTable.LESSGREATER)
+// > 3
 precedences.set(TokenTypes.GT, PrecedenceTable.LESSGREATER)
+// + 4
 precedences.set(TokenTypes.PLUS, PrecedenceTable.SUM)
+// - 4
 precedences.set(TokenTypes.MINUS, PrecedenceTable.SUM)
+// / 5
 precedences.set(TokenTypes.SLASH, PrecedenceTable.PRODUCT)
+// * 5
 precedences.set(TokenTypes.ASTERISK, PrecedenceTable.PRODUCT)
 
 export class Parser {
