@@ -8,6 +8,7 @@ import { PrefixExpression } from '../ast/prefixExpression'
 import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Parser } from './parser'
+import { Boolean } from '../ast/boolean'
 
 describe('Parser', () => {
   it('should return let statements', () => {
@@ -103,10 +104,13 @@ describe('Parser', () => {
     const prefixTests = [
       ['!5;', '!', 5],
       ['-15;', '-', 15],
-    ] as const
+
+      ['!true', '!', true],
+      ['!false', '!', false],
+    ]
 
     for (const [input, expectedOperator, expectedInteger] of prefixTests) {
-      const lexer = Lexer.newLexer(input)
+      const lexer = Lexer.newLexer(input as string)
       const parser = Parser.newParser(lexer)
       const program = parser.parseProgram()
       checkParserErrors(parser)
@@ -119,7 +123,7 @@ describe('Parser', () => {
       const prefix = prefixExp as PrefixExpression
 
       expect(prefix.operator).toEqual(expectedOperator)
-      expect(testIntegerLiteral(prefix.right!, expectedInteger)).toBeTruthy()
+      expect(testLiteralExpression(prefix.right!, expectedInteger as number)).toBeTruthy()
     }
   })
 
@@ -133,9 +137,10 @@ describe('Parser', () => {
       ['5 < 5', 5, '<', 5],
       ['5 == 5', 5, '==', 5],
       ['5 != 5', 5, '!=', 5],
-      // ['true == true', true, '==', true],
-      // ['true != false', true, '!=', false],
-      // ['false == false', false, '==', false],
+
+      ['true == true', true, '==', true],
+      ['true != false', true, '!=', false],
+      ['false == false', false, '==', false],
     ] as const
 
     for (const [input, expectedLeft, expectedOperator, expectedRight] of infixTests) {
@@ -175,20 +180,22 @@ describe('Parser', () => {
       ['5 < 4 != 3 > 4', '((5 < 4) != (3 > 4))'],
       ['3 + 4 * 5 == 3 * 1 + 4 * 5', '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))'],
       ['3 + 4 * 5 == 3 * 1 + 4 * 5', '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))'],
-      //  ['true', 'true'],
-      //  ['false', 'false'],
-      //  ['3 > 5 == false', '((3 > 5) == false)'],
-      //  ['3 < 5 == true', '((3 < 5) == true)'],
-      //  ['1 + (2 + 3) + 4', '((1 + (2 + 3)) + 4)'],
-      //  ['(5 + 5) * 2', '((5 + 5) * 2)'],
-      //  ['2 / (5 + 5)', '(2 / (5 + 5))'],
-      //  ['-(5 + 5)', '(-(5 + 5))'],
-      //  ['!(true == true)', '(!(true == true))'],
-      //  ['a + add(b * c) + d', '((a + add((b * c))) + d)'],
-      //  ['add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))', 'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))'],
-      //  ['add(a + b + c * d / f + g)', 'add((((a + b) + ((c * d) / f)) + g))'],
-      //  ['a * [1, 2, 3, 4][b * c] * d', '((a * ([1, 2, 3, 4][(b * c)])) * d)'],
-      //  ['add(a * b[2], b[1], 2 * [1, 2][1])', 'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))'],
+
+      ['true', 'true'],
+      ['false', 'false'],
+      ['3 > 5 == false', '((3 > 5) == false)'],
+      ['3 < 5 == true', '((3 < 5) == true)'],
+
+      // ['1 + (2 + 3) + 4', '((1 + (2 + 3)) + 4)'],
+      // ['(5 + 5) * 2', '((5 + 5) * 2)'],
+      // ['2 / (5 + 5)', '(2 / (5 + 5))'],
+      // ['-(5 + 5)', '(-(5 + 5))'],
+      // ['!(true == true)', '(!(true == true))'],
+      // ['a + add(b * c) + d', '((a + add((b * c))) + d)'],
+      // ['add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))', 'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))'],
+      // ['add(a + b + c * d / f + g)', 'add((((a + b) + ((c * d) / f)) + g))'],
+      // ['a * [1, 2, 3, 4][b * c] * d', '((a * ([1, 2, 3, 4][(b * c)])) * d)'],
+      // ['add(a * b[2], b[1], 2 * [1, 2][1])', 'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))'],
     ]
 
     for (const [input, expected] of tests) {
@@ -201,6 +208,25 @@ describe('Parser', () => {
 
       expect(actual).toEqual(expected)
     }
+  })
+
+  it('should parse boolean expression', () => {
+    const input = `true;`
+
+    const lexer = Lexer.newLexer(input)
+    const parser = Parser.newParser(lexer)
+    const program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    expect(program.statements).toHaveLength(1)
+
+    const stmt = program.statements[0]
+
+    expect(stmt instanceof ExpressionStatement).toBeTruthy()
+
+    const boolExp = (stmt as ExpressionStatement).expression
+
+    expect(testLiteralExpression(boolExp!, true)).toBeTruthy()
   })
 })
 
@@ -267,6 +293,8 @@ function testLiteralExpression(exp: Expression, expected: any): boolean {
       return testIntegerLiteral(exp, expected)
     case 'string':
       return testIdentifier(exp, expected)
+    case 'boolean':
+      return testBooleanLiteral(exp, expected)
   }
   return false
 }
@@ -287,6 +315,23 @@ function testInfixExpression(exp: Expression, left: any, operator: string, right
   }
 
   if (!testLiteralExpression(infix.right!, right)) {
+    return false
+  }
+
+  return true
+}
+
+function testBooleanLiteral(exp: Expression, value: boolean): boolean {
+  if (!(exp instanceof Boolean)) {
+    return false
+  }
+  const boolExp = exp as Boolean
+
+  if (boolExp.value !== value) {
+    return false
+  }
+
+  if (boolExp.tokenLiteral() !== `${value}`) {
     return false
   }
 

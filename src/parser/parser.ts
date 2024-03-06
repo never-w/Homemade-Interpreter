@@ -9,6 +9,7 @@ import { Program } from '../ast/program'
 import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Token, TokenType, TokenTypes } from '../token/token'
+import { Boolean } from '../ast/boolean'
 
 type PrefixParseFn = () => Expression
 type InfixParseFn = (expression: Expression) => Expression
@@ -63,6 +64,8 @@ export class Parser {
     parser.registerPrefix(TokenTypes.INT, parser.parseIntegerLiteral)
     parser.registerPrefix(TokenTypes.BANG, parser.parsePrefixExpression)
     parser.registerPrefix(TokenTypes.MINUS, parser.parsePrefixExpression)
+    parser.registerPrefix(TokenTypes.TRUE, parser.parseBoolean)
+    parser.registerPrefix(TokenTypes.FALSE, parser.parseBoolean)
 
     parser.registerInfix(TokenTypes.PLUS, parser.parseInfixExpression)
     parser.registerInfix(TokenTypes.MINUS, parser.parseInfixExpression)
@@ -245,5 +248,9 @@ export class Parser {
     this.nextToken()
     expression.right = this.parseExpression(precedence)
     return expression
+  }
+
+  private parseBoolean(): Expression {
+    return Boolean.new(this.curToken!, this.curTokenIs(TokenTypes.TRUE))
   }
 }
