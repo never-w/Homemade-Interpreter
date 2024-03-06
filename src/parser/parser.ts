@@ -66,6 +66,7 @@ export class Parser {
     parser.registerPrefix(TokenTypes.MINUS, parser.parsePrefixExpression)
     parser.registerPrefix(TokenTypes.TRUE, parser.parseBoolean)
     parser.registerPrefix(TokenTypes.FALSE, parser.parseBoolean)
+    parser.registerPrefix(TokenTypes.LPAREN, parser.parseGroupedExpression)
 
     parser.registerInfix(TokenTypes.PLUS, parser.parseInfixExpression)
     parser.registerInfix(TokenTypes.MINUS, parser.parseInfixExpression)
@@ -96,7 +97,7 @@ export class Parser {
     return program
   }
 
-  private parseStatement(): Statement | null {
+  private parseStatement(): Statement {
     switch (this.curToken?.type) {
       case TokenTypes.LET:
         return this.parseLetStatement()
@@ -107,7 +108,7 @@ export class Parser {
     }
   }
 
-  private parseLetStatement(): LetStatement | null {
+  private parseLetStatement(): LetStatement {
     const stmt = LetStatement.new(this.curToken!)
 
     if (!this.expectPeek(TokenTypes.IDENT)) {
@@ -184,12 +185,12 @@ export class Parser {
     return stmt
   }
 
-  private parseExpression(precedence: number): Expression | undefined {
+  private parseExpression(precedence: number): Expression {
     const prefix = this.prefixParseFns.get(this.curToken!.type)?.bind(this)
 
     if (!prefix) {
       this.noPrefixParseFnError(this.curToken?.type!)
-      return
+      return null
     }
 
     let leftExp = prefix()
@@ -212,6 +213,7 @@ export class Parser {
     if (isNaN(value)) {
       const msg = `could not parse ${this.curToken?.literal} as integer`
       this.errors.push(msg)
+      return null
     }
 
     lit.value = value
@@ -252,5 +254,14 @@ export class Parser {
 
   private parseBoolean(): Expression {
     return Boolean.new(this.curToken!, this.curTokenIs(TokenTypes.TRUE))
+  }
+
+  private parseGroupedExpression(): Expression {
+    this.nextToken()
+    const exp = this.parseExpression(PrecedenceTable.LOWEST)
+
+    if (!this.expectPeek(TokenTypes.RPAREN)) return null
+
+    return exp
   }
 }
