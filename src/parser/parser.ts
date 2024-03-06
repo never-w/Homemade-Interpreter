@@ -185,6 +185,7 @@ export class Parser {
     return stmt
   }
 
+  // !重点 parseExpression
   private parseExpression(precedence: number): Expression {
     const prefix = this.prefixParseFns.get(this.curToken!.type)?.bind(this)
 
