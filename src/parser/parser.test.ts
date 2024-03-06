@@ -67,15 +67,17 @@ describe('Parser', () => {
 
     const identExp = (stmt as ExpressionStatement).expression
 
-    expect(identExp instanceof Identifier).toBeTruthy()
+    expect(testLiteralExpression(identExp!, 'foobar')).toBeTruthy()
 
-    const ident = identExp as Identifier
+    // expect(identExp instanceof Identifier).toBeTruthy()
 
-    expect(ident.value).toEqual('foobar')
-    expect(ident.tokenLiteral()).toEqual('foobar')
+    // const ident = identExp as Identifier
+
+    // expect(ident.value).toEqual('foobar')
+    // expect(ident.tokenLiteral()).toEqual('foobar')
   })
 
-  it('should parse literal expression', () => {
+  it('should parse integer literal expression', () => {
     const input = `5;`
 
     const lexer = Lexer.newLexer(input)
@@ -88,11 +90,13 @@ describe('Parser', () => {
 
     const integerLiteralExp = (program.statements[0] as ExpressionStatement).expression
 
-    expect(integerLiteralExp instanceof IntegerLiteral).toBeTruthy()
-    const integerLiteral = integerLiteralExp as IntegerLiteral
+    expect(testLiteralExpression(integerLiteralExp!, 5)).toBeTruthy()
 
-    expect(integerLiteral.value).toEqual(5)
-    expect(integerLiteral.tokenLiteral()).toEqual('5')
+    // expect(integerLiteralExp instanceof IntegerLiteral).toBeTruthy()
+    // const integerLiteral = integerLiteralExp as IntegerLiteral
+
+    // expect(integerLiteral.value).toEqual(5)
+    // expect(integerLiteral.tokenLiteral()).toEqual('5')
   })
 
   it('should parse prefix expressions', () => {
@@ -144,17 +148,63 @@ describe('Parser', () => {
       expect(program.statements[0] instanceof ExpressionStatement).toBeTruthy()
 
       const infixExp = (program.statements[0] as ExpressionStatement).expression
-      expect(infixExp instanceof InfixExpression)
-      const infix = infixExp as InfixExpression
 
-      expect(testIntegerLiteral(infix.left!, expectedLeft as number)).toBeTruthy()
-      expect(infix.operator).toEqual(expectedOperator as string)
-      expect(testIntegerLiteral(infix.right!, expectedRight as number)).toBeTruthy()
+      expect(testInfixExpression(infixExp!, expectedLeft, expectedOperator, expectedRight)).toBeTruthy()
+
+      // expect(infixExp instanceof InfixExpression)
+      // const infix = infixExp as InfixExpression
+
+      // expect(testIntegerLiteral(infix.left!, expectedLeft as number)).toBeTruthy()
+      // expect(infix.operator).toEqual(expectedOperator as string)
+      // expect(testIntegerLiteral(infix.right!, expectedRight as number)).toBeTruthy()
+    }
+  })
+
+  it('should parse correctly the operator precedences', () => {
+    const tests = [
+      ['-a * b', '((-a) * b)'],
+      ['!-a', '(!(-a))'],
+      ['a + b + c', '((a + b) + c)'],
+      ['a + b - c', '((a + b) - c)'],
+      ['a * b * c', '((a * b) * c)'],
+      ['a * b / c', '((a * b) / c)'],
+      ['a + b / c', '(a + (b / c))'],
+      ['a + b * c + d / e - f', '(((a + (b * c)) + (d / e)) - f)'],
+      ['3 + 4; -5 * 5', '(3 + 4)((-5) * 5)'],
+      ['5 > 4 == 3 < 4', '((5 > 4) == (3 < 4))'],
+      ['5 < 4 != 3 > 4', '((5 < 4) != (3 > 4))'],
+      ['3 + 4 * 5 == 3 * 1 + 4 * 5', '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))'],
+      ['3 + 4 * 5 == 3 * 1 + 4 * 5', '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))'],
+      //  ['true', 'true'],
+      //  ['false', 'false'],
+      //  ['3 > 5 == false', '((3 > 5) == false)'],
+      //  ['3 < 5 == true', '((3 < 5) == true)'],
+      //  ['1 + (2 + 3) + 4', '((1 + (2 + 3)) + 4)'],
+      //  ['(5 + 5) * 2', '((5 + 5) * 2)'],
+      //  ['2 / (5 + 5)', '(2 / (5 + 5))'],
+      //  ['-(5 + 5)', '(-(5 + 5))'],
+      //  ['!(true == true)', '(!(true == true))'],
+      //  ['a + add(b * c) + d', '((a + add((b * c))) + d)'],
+      //  ['add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))', 'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))'],
+      //  ['add(a + b + c * d / f + g)', 'add((((a + b) + ((c * d) / f)) + g))'],
+      //  ['a * [1, 2, 3, 4][b * c] * d', '((a * ([1, 2, 3, 4][(b * c)])) * d)'],
+      //  ['add(a * b[2], b[1], 2 * [1, 2][1])', 'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))'],
+    ]
+
+    for (const [input, expected] of tests) {
+      const lexer = Lexer.newLexer(input)
+      const parser = Parser.newParser(lexer)
+      const program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      const actual = program.string()
+
+      expect(actual).toEqual(expected)
     }
   })
 })
 
-function testLetStatement(stmt: Statement, expected: string) {
+function testLetStatement(stmt: Statement, expected: string): boolean {
   if (
     !stmt ||
     stmt.tokenLiteral() !== 'let' ||
@@ -164,7 +214,6 @@ function testLetStatement(stmt: Statement, expected: string) {
   ) {
     return false
   }
-
   return true
 }
 
@@ -174,17 +223,72 @@ function checkParserErrors(parser: Parser): boolean {
   for (const error of errors) {
     console.error(`parser error: ${error}`)
   }
-  return !!errors.length
+
+  return errors.length > 0 ? true : false
 }
 
-function testIntegerLiteral(it: Expression, value: number): boolean {
-  if (!(it instanceof IntegerLiteral)) return false
+function testIntegerLiteral(il: Expression, value: number): boolean {
+  if (!(il instanceof IntegerLiteral)) {
+    return false
+  }
+  const ilExp = il as IntegerLiteral
 
-  const ilExp = it as IntegerLiteral
+  if (ilExp.value !== value) {
+    return false
+  }
 
-  if (ilExp.value !== value) return false
+  if (ilExp.tokenLiteral() !== `${value}`) {
+    return false
+  }
 
-  if (ilExp.tokenLiteral() !== `${value}`) return false
+  return true
+}
+
+function testIdentifier(exp: Expression, value: string): boolean {
+  if (!(exp instanceof Identifier)) {
+    return false
+  }
+  const ident = exp as Identifier
+
+  if (ident.value !== value) {
+    return false
+  }
+
+  if (ident.tokenLiteral() !== value) {
+    return false
+  }
+
+  return true
+}
+
+function testLiteralExpression(exp: Expression, expected: any): boolean {
+  switch (typeof expected) {
+    case 'number':
+      return testIntegerLiteral(exp, expected)
+    case 'string':
+      return testIdentifier(exp, expected)
+  }
+  return false
+}
+
+function testInfixExpression(exp: Expression, left: any, operator: string, right: any): boolean {
+  if (!(exp instanceof InfixExpression)) {
+    return false
+  }
+
+  const infix = exp as InfixExpression
+
+  if (!testLiteralExpression(infix.left, left)) {
+    return false
+  }
+
+  if (infix.operator !== operator) {
+    return false
+  }
+
+  if (!testLiteralExpression(infix.right!, right)) {
+    return false
+  }
 
   return true
 }
