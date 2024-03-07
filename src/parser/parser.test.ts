@@ -10,6 +10,7 @@ import { Lexer } from '../lexer/lexer'
 import { Parser } from './parser'
 import { Boolean } from '../ast/boolean'
 import { IfExpression } from '../ast/ifExpression'
+import { FunctionLiteral } from '../ast/functionLiteral'
 
 describe('Parser', () => {
   it('should return let statements', () => {
@@ -293,6 +294,59 @@ describe('Parser', () => {
     const alternative = ifExp.alternative.statements[0] as ExpressionStatement
 
     expect(testIdentifier(alternative.expression, 'y')).toBeTruthy()
+  })
+
+  it('should parse function literal', () => {
+    const input = 'fn(x, y) { x + y; }'
+
+    const lexer = Lexer.newLexer(input)
+    const parser = Parser.newParser(lexer)
+    const program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    expect(program.statements).toHaveLength(1)
+
+    const stmt = program.statements[0]
+
+    expect(stmt instanceof ExpressionStatement).toBeTruthy()
+    const exp = (stmt as ExpressionStatement).expression
+
+    expect(exp instanceof FunctionLiteral).toBeTruthy()
+    const fnExp = exp as FunctionLiteral
+
+    expect(fnExp.parameters).toHaveLength(2)
+
+    expect(testLiteralExpression(fnExp.parameters[0], 'x')).toBeTruthy()
+    expect(testLiteralExpression(fnExp.parameters[1], 'y')).toBeTruthy()
+
+    expect(fnExp.body.statements).toHaveLength(1)
+    expect(fnExp.body.statements[0] instanceof ExpressionStatement).toBeTruthy()
+    expect(
+      testInfixExpression((fnExp.body.statements[0] as ExpressionStatement).expression, 'x', '+', 'y'),
+    ).toBeTruthy()
+  })
+
+  it('should parse function parameters', () => {
+    const tests = [
+      ['fn() {};', []],
+      ['fn(x) {};', ['x']],
+      ['fn(x, y, z) {};', ['x', 'y', 'z']],
+    ]
+
+    for (const [input, outputParams] of tests) {
+      const lexer = Lexer.newLexer(input as string)
+      const parser = Parser.newParser(lexer)
+      const program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      const stmt = program.statements[0] as ExpressionStatement
+      const functionExp = stmt.expression as FunctionLiteral
+
+      expect(functionExp.parameters).toHaveLength(outputParams.length)
+      ;(outputParams as string[]).forEach((param, idx) => {
+        expect(testLiteralExpression(functionExp.parameters[idx], param)).toBeTruthy()
+      })
+    }
   })
 })
 
