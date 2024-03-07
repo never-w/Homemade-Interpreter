@@ -9,6 +9,7 @@ import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Parser } from './parser'
 import { Boolean } from '../ast/boolean'
+import { IfExpression } from '../ast/ifExpression'
 
 describe('Parser', () => {
   it('should return let statements', () => {
@@ -228,6 +229,70 @@ describe('Parser', () => {
     const boolExp = (stmt as ExpressionStatement).expression
 
     expect(testLiteralExpression(boolExp!, true)).toBeTruthy()
+  })
+
+  it('should parse if expression', () => {
+    const input = `if(x < y) { x }`
+
+    const lexer = Lexer.newLexer(input)
+    const parser = Parser.newParser(lexer)
+    const program = parser.parseProgram()
+    checkParserErrors(parser)
+    expect(program.statements).toHaveLength(1)
+
+    const stmt = program.statements[0]
+
+    expect(stmt instanceof ExpressionStatement).toBeTruthy()
+    const exp = (stmt as ExpressionStatement).expression
+    expect(exp instanceof IfExpression).toBeTruthy()
+    const ifExp = exp as IfExpression
+
+    expect(testInfixExpression(ifExp.condition, 'x', '<', 'y')).toBeTruthy()
+
+    expect(ifExp.consequence.statements).toHaveLength(1)
+
+    expect(ifExp.consequence.statements[0] instanceof ExpressionStatement).toBeTruthy()
+
+    const consequence = ifExp.consequence.statements[0] as ExpressionStatement
+
+    expect(testIdentifier(consequence.expression, 'x')).toBeTruthy()
+    expect(ifExp.alternative).not.toBeDefined()
+  })
+
+  it('should parse if else expression', () => {
+    const input = `if(x < y) { x } else { y }`
+
+    const lexer = Lexer.newLexer(input)
+    const parser = Parser.newParser(lexer)
+    const program = parser.parseProgram()
+    checkParserErrors(parser)
+    expect(program.statements).toHaveLength(1)
+
+    const stmt = program.statements[0]
+
+    expect(stmt instanceof ExpressionStatement).toBeTruthy()
+    const exp = (stmt as ExpressionStatement).expression
+    expect(exp instanceof IfExpression).toBeTruthy()
+    const ifExp = exp as IfExpression
+
+    expect(testInfixExpression(ifExp.condition, 'x', '<', 'y')).toBeTruthy()
+
+    expect(ifExp.consequence.statements).toHaveLength(1)
+
+    expect(ifExp.consequence.statements[0] instanceof ExpressionStatement).toBeTruthy()
+
+    const consequence = ifExp.consequence.statements[0] as ExpressionStatement
+
+    expect(testIdentifier(consequence.expression, 'x')).toBeTruthy()
+    expect(ifExp.alternative).not.toBeNull()
+
+    expect(ifExp.alternative.statements).toHaveLength(1)
+
+    expect(ifExp.alternative.statements[0] instanceof ExpressionStatement).toBeTruthy()
+
+    const alternative = ifExp.alternative.statements[0] as ExpressionStatement
+
+    expect(testIdentifier(alternative.expression, 'y')).toBeTruthy()
   })
 })
 

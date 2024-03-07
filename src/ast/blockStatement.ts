@@ -2,21 +2,25 @@ import { Token } from '../token/token'
 import { Statement } from './ast'
 
 export class BlockStatement implements Statement {
-  constructor(
+  private constructor(
     private token: Token,
-    public statements: Statement[],
+    public statements: Statement[] = [],
   ) {}
 
-  statementNode(): void {}
+  public static new(token: Token): BlockStatement {
+    return new BlockStatement(token)
+  }
 
-  tokenLiteral(): string {
+  public statementNode(): void {}
+
+  public tokenLiteral(): string {
     return this.token.literal
   }
 
-  string(): string {
+  public string(): string {
     let out = ''
-    for (const stmt of this.statements) {
-      out += stmt.string()
+    for (const statement of this.statements) {
+      out += statement.string()
     }
 
     return out

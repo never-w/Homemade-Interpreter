@@ -3,12 +3,16 @@ import { Expression } from './ast'
 import { BlockStatement } from './blockStatement'
 
 export class IfExpression implements Expression {
-  constructor(
+  private constructor(
     private token: Token,
-    public condition: Expression,
-    public consequence: BlockStatement,
-    public alternative: BlockStatement,
+    public condition?: Expression,
+    public consequence?: BlockStatement,
+    public alternative?: BlockStatement,
   ) {}
+
+  static new(token: Token): IfExpression {
+    return new IfExpression(token)
+  }
 
   expressionNode(): void {}
 

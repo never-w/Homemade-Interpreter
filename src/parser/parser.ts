@@ -10,6 +10,8 @@ import { ReturnStatement } from '../ast/returnStatement'
 import { Lexer } from '../lexer/lexer'
 import { Token, TokenType, TokenTypes } from '../token/token'
 import { Boolean } from '../ast/boolean'
+import { IfExpression } from '../ast/ifExpression'
+import { BlockStatement } from '../ast/blockStatement'
 
 type PrefixParseFn = () => Expression
 type InfixParseFn = (expression: Expression) => Expression
@@ -67,6 +69,7 @@ export class Parser {
     parser.registerPrefix(TokenTypes.TRUE, parser.parseBoolean)
     parser.registerPrefix(TokenTypes.FALSE, parser.parseBoolean)
     parser.registerPrefix(TokenTypes.LPAREN, parser.parseGroupedExpression)
+    parser.registerPrefix(TokenTypes.IF, parser.parseIfExpression)
 
     parser.registerInfix(TokenTypes.PLUS, parser.parseInfixExpression)
     parser.registerInfix(TokenTypes.MINUS, parser.parseInfixExpression)
@@ -109,13 +112,13 @@ export class Parser {
   }
 
   private parseLetStatement(): LetStatement {
-    const stmt = LetStatement.new(this.curToken!)
+    const stmt = LetStatement.new(this.curToken)
 
     if (!this.expectPeek(TokenTypes.IDENT)) {
       return null
     }
 
-    stmt.name = Identifier.new(this.curToken!, this.curToken?.literal!)
+    stmt.name = Identifier.new(this.curToken, this.curToken?.literal)
 
     if (!this.expectPeek(TokenTypes.ASSIGN)) {
       return null
@@ -155,7 +158,7 @@ export class Parser {
   }
 
   private parseReturnStatement(): ReturnStatement {
-    const stmt = ReturnStatement.new(this.curToken!)
+    const stmt = ReturnStatement.new(this.curToken)
     this.nextToken()
 
     while (!this.curTokenIs(TokenTypes.SEMICOLON)) {
@@ -174,7 +177,7 @@ export class Parser {
   }
 
   private parseExpressionStatement(): ExpressionStatement {
-    const stmt = ExpressionStatement.new(this.curToken!)
+    const stmt = ExpressionStatement.new(this.curToken)
 
     stmt.expression = this.parseExpression(PrecedenceTable.LOWEST)
 
@@ -187,16 +190,16 @@ export class Parser {
 
   // !重点 parseExpression
   private parseExpression(precedence: number): Expression {
-    const prefix = this.prefixParseFns.get(this.curToken!.type)?.bind(this)
+    const prefix = this.prefixParseFns.get(this.curToken?.type)?.bind(this)
 
     if (!prefix) {
-      this.noPrefixParseFnError(this.curToken?.type!)
+      this.noPrefixParseFnError(this.curToken?.type)
       return null
     }
 
     let leftExp = prefix()
     while (!this.peekTokenIs(TokenTypes.SEMICOLON) && precedence < this.peekPrecedence()) {
-      const infix = this.infixParseFns.get(this.peekToken?.type!)?.bind(this)
+      const infix = this.infixParseFns.get(this.peekToken?.type)?.bind(this)
       if (!infix) return leftExp
       this.nextToken()
       leftExp = infix(leftExp)
@@ -205,12 +208,12 @@ export class Parser {
   }
 
   private parseIdentifier(): Expression {
-    return Identifier.new(this.curToken!, this.curToken!.literal)
+    return Identifier.new(this.curToken, this.curToken?.literal)
   }
 
   private parseIntegerLiteral(): Expression {
-    const lit = IntegerLiteral.new(this.curToken!)
-    const value = parseInt(this.curToken?.literal!)
+    const lit = IntegerLiteral.new(this.curToken)
+    const value = parseInt(this.curToken?.literal)
     if (isNaN(value)) {
       const msg = `could not parse ${this.curToken?.literal} as integer`
       this.errors.push(msg)
@@ -227,26 +230,26 @@ export class Parser {
   }
 
   private parsePrefixExpression(): Expression {
-    const expression = PrefixExpression.new(this.curToken!, this.curToken?.literal!)
+    const expression = PrefixExpression.new(this.curToken, this.curToken?.literal)
     this.nextToken()
     expression.right = this.parseExpression(PrecedenceTable.PREFIX)
     return expression
   }
 
   private peekPrecedence(): number {
-    const precedence = precedences.get(this.peekToken?.type!)
+    const precedence = precedences.get(this.peekToken?.type)
     if (precedence) return precedence
     return PrecedenceTable.LOWEST
   }
 
   private curPrecedence(): number {
-    const precedence = precedences.get(this.curToken?.type!)
+    const precedence = precedences.get(this.curToken?.type)
     if (precedence) return precedence
     return PrecedenceTable.LOWEST
   }
 
   private parseInfixExpression(left: Expression): Expression {
-    const expression = InfixExpression.new(this.curToken!, left, this.curToken?.literal!)
+    const expression = InfixExpression.new(this.curToken, left, this.curToken?.literal)
     const precedence = this.curPrecedence()
     this.nextToken()
     expression.right = this.parseExpression(precedence)
@@ -254,7 +257,7 @@ export class Parser {
   }
 
   private parseBoolean(): Expression {
-    return Boolean.new(this.curToken!, this.curTokenIs(TokenTypes.TRUE))
+    return Boolean.new(this.curToken, this.curTokenIs(TokenTypes.TRUE))
   }
 
   private parseGroupedExpression(): Expression {
@@ -264,5 +267,47 @@ export class Parser {
     if (!this.expectPeek(TokenTypes.RPAREN)) return null
 
     return exp
+  }
+
+  private parseIfExpression(): Expression {
+    const expression = IfExpression.new(this.curToken)
+
+    if (!this.expectPeek(TokenTypes.LPAREN)) {
+      return null
+    }
+
+    this.nextToken()
+    expression.condition = this.parseExpression(PrecedenceTable.LOWEST)
+
+    if (!this.expectPeek(TokenTypes.RPAREN)) {
+      return null
+    }
+
+    if (!this.expectPeek(TokenTypes.LBRACE)) {
+      return null
+    }
+
+    expression.consequence = this.parseBlockStatement()
+
+    if (this.peekTokenIs(TokenTypes.ELSE)) {
+      this.nextToken()
+      if (!this.expectPeek(TokenTypes.LBRACE)) return null
+      expression.alternative = this.parseBlockStatement()
+    }
+
+    return expression
+  }
+
+  private parseBlockStatement(): BlockStatement {
+    const block = BlockStatement.new(this.curToken)
+    this.nextToken()
+
+    while (!this.curTokenIs(TokenTypes.RBRACE) && !this.curTokenIs(TokenTypes.EOF)) {
+      const stmt = this.parseStatement()
+      if (stmt) block.statements.push(stmt)
+      this.nextToken()
+    }
+
+    return block
   }
 }
