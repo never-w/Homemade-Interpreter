@@ -11,6 +11,7 @@ import { Parser } from './parser'
 import { Boolean } from '../ast/boolean'
 import { IfExpression } from '../ast/ifExpression'
 import { FunctionLiteral } from '../ast/functionLiteral'
+import { CallExpression } from '../ast/callExpression'
 
 describe('Parser', () => {
   it('should return let statements', () => {
@@ -193,10 +194,10 @@ describe('Parser', () => {
       ['2 / (5 + 5)', '(2 / (5 + 5))'],
       ['-(5 + 5)', '(-(5 + 5))'],
       ['!(true == true)', '(!(true == true))'],
+      ['a + add(b * c) + d', '((a + add((b * c))) + d)'],
+      ['add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))', 'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))'],
+      ['add(a + b + c * d / f + g)', 'add((((a + b) + ((c * d) / f)) + g))'],
 
-      // ['a + add(b * c) + d', '((a + add((b * c))) + d)'],
-      // ['add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))', 'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))'],
-      // ['add(a + b + c * d / f + g)', 'add((((a + b) + ((c * d) / f)) + g))'],
       // ['a * [1, 2, 3, 4][b * c] * d', '((a * ([1, 2, 3, 4][(b * c)])) * d)'],
       // ['add(a * b[2], b[1], 2 * [1, 2][1])', 'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))'],
     ]
@@ -347,6 +348,33 @@ describe('Parser', () => {
         expect(testLiteralExpression(functionExp.parameters[idx], param)).toBeTruthy()
       })
     }
+  })
+
+  it('should parse call expressions', () => {
+    const input = 'add(1, 2 * 3, 4 + 5);'
+
+    const lexer = Lexer.newLexer(input)
+    const parser = Parser.newParser(lexer)
+    const program = parser.parseProgram()
+    checkParserErrors(parser)
+
+    expect(program.statements).toHaveLength(1)
+
+    const stmt = program.statements[0]
+
+    expect(stmt instanceof ExpressionStatement).toBeTruthy()
+    const exp = (stmt as ExpressionStatement).expression
+
+    expect(exp instanceof CallExpression).toBeTruthy()
+    const callExp = exp as CallExpression
+
+    expect(testIdentifier(callExp.func, 'add')).toBeTruthy()
+
+    expect(callExp.args).toHaveLength(3)
+
+    expect(testLiteralExpression(callExp.args[0], 1)).toBeTruthy()
+    expect(testInfixExpression(callExp.args[1], 2, '*', 3)).toBeTruthy()
+    expect(testInfixExpression(callExp.args[2], 4, '+', 5)).toBeTruthy()
   })
 })
 

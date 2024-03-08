@@ -13,6 +13,7 @@ import { Boolean } from '../ast/boolean'
 import { IfExpression } from '../ast/ifExpression'
 import { BlockStatement } from '../ast/blockStatement'
 import { FunctionLiteral } from '../ast/functionLiteral'
+import { CallExpression } from '../ast/callExpression'
 
 type PrefixParseFn = () => Expression
 type InfixParseFn = (expression: Expression) => Expression
@@ -44,6 +45,8 @@ precedences.set(TokenTypes.MINUS, PrecedenceTable.SUM)
 precedences.set(TokenTypes.SLASH, PrecedenceTable.PRODUCT)
 // * 5
 precedences.set(TokenTypes.ASTERISK, PrecedenceTable.PRODUCT)
+// ( 7
+precedences.set(TokenTypes.LPAREN, PrecedenceTable.CALL)
 
 export class Parser {
   private lexer: Lexer
@@ -81,6 +84,7 @@ export class Parser {
     parser.registerInfix(TokenTypes.NOT_EQ, parser.parseInfixExpression)
     parser.registerInfix(TokenTypes.LT, parser.parseInfixExpression)
     parser.registerInfix(TokenTypes.GT, parser.parseInfixExpression)
+    parser.registerInfix(TokenTypes.LPAREN, parser.parseCallExpression)
 
     return parser
   }
@@ -350,5 +354,34 @@ export class Parser {
     if (!this.expectPeek(TokenTypes.RPAREN)) return null
 
     return identifiers
+  }
+
+  private parseCallExpression(func: Expression): Expression {
+    const exp = CallExpression.new(this.curToken, func)
+    exp.args = this.parseExpressionList(TokenTypes.RPAREN)
+    return exp
+  }
+
+  private parseExpressionList(end: TokenType): Expression[] {
+    const list: Expression[] = []
+
+    if (this.peekTokenIs(end)) {
+      this.nextToken()
+      return list
+    }
+    this.nextToken()
+    list.push(this.parseExpression(PrecedenceTable.LOWEST))
+
+    while (this.peekTokenIs(TokenTypes.COMMA)) {
+      this.nextToken()
+      this.nextToken()
+      list.push(this.parseExpression(PrecedenceTable.LOWEST))
+    }
+
+    if (!this.expectPeek(end)) {
+      return null
+    }
+
+    return list
   }
 }
