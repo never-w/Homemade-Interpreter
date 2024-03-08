@@ -36,6 +36,32 @@ describe('Parser', () => {
     })
   })
 
+  it('should parse let statements with expressions', () => {
+    const tests = [
+      { input: 'let x = 5;', expectedIdentifier: 'x', expectedValue: 5 },
+      { input: 'let y = true;', expectedIdentifier: 'y', expectedValue: true },
+      {
+        input: 'let foobar = y;',
+        expectedIdentifier: 'foobar',
+        expectedValue: 'y',
+      },
+    ]
+
+    for (const test of tests) {
+      const lexer = Lexer.newLexer(test.input)
+      const parser = Parser.newParser(lexer)
+      const program = parser.parseProgram()
+      checkParserErrors(parser)
+
+      expect(program.statements).toHaveLength(1)
+
+      const stmt = program.statements[0]
+      expect(testLetStatement(stmt, test.expectedIdentifier)).toBeTruthy()
+      const letStmt = stmt as LetStatement
+      expect(testLiteralExpression(letStmt.value, test.expectedValue)).toBeTruthy()
+    }
+  })
+
   it('should parse return statements', () => {
     const input = `return 5;
     return 10;
