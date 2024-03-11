@@ -1,7 +1,11 @@
 import { ObjectTypeTable, Object } from './object'
 
 export class Boolean implements Object {
-  value: boolean
+  private constructor(public value: boolean) {}
+
+  static new(value: boolean): Boolean {
+    return new Boolean(value)
+  }
 
   inspect(): string {
     return `${this.value}`
