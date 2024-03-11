@@ -1,7 +1,7 @@
 import readline from 'readline'
 import { Lexer } from '../lexer/lexer'
-import { TokenTypes } from '../token/token'
 import { Parser } from '../parser/parser'
+import { evaluator } from '../evaluator/evaluator'
 
 const MONKEY_FACE = `            __,__
    .--.  .-"     "-.  .--.
@@ -32,7 +32,10 @@ repl.on('line', (input) => {
     printParseErrors(parser.getErrors())
   }
 
-  console.log(program.string())
+  const evaluated = evaluator(program)
+  if (evaluated) {
+    console.log(evaluated.inspect())
+  }
   repl.prompt()
 })
 

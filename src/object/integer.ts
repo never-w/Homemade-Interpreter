@@ -1,7 +1,11 @@
 import { ObjectTypeTable, Object } from './object'
 
 export class Integer implements Object {
-  value: number
+  private constructor(public value: number) {}
+
+  static new(value: number): Integer {
+    return new Integer(value)
+  }
 
   inspect(): string {
     return `${this.value}`
