@@ -7,10 +7,12 @@ import { InfixExpression } from '../ast/infixExpression'
 import { IntegerLiteral } from '../ast/integerLiteral'
 import { PrefixExpression } from '../ast/prefixExpression'
 import { Program } from '../ast/program'
+import { ReturnStatement } from '../ast/returnStatement'
 import { Boolean } from '../object/boolean'
 import { Integer } from '../object/integer'
 import { Null } from '../object/null'
 import { Object, ObjectTypeTable } from '../object/object'
+import { ReturnValue } from '../object/returnValue'
 
 const TRUE = Boolean.new(true)
 const FALSE = Boolean.new(false)
@@ -20,7 +22,7 @@ export function evaluator(node: ASTNode): Object {
   if (node instanceof IntegerLiteral) {
     return Integer.new(node.value)
   } else if (node instanceof Program) {
-    return evalStatements(node.statements)
+    return evalProgram(node)
   } else if (node instanceof ExpressionStatement) {
     return evaluator(node.expression)
   } else if (node instanceof BooleanAST) {
@@ -35,17 +37,38 @@ export function evaluator(node: ASTNode): Object {
   } else if (node instanceof IfExpression) {
     return evalIfExpression(node)
   } else if (node instanceof BlockStatement) {
-    return evalStatements(node.statements)
+    return evalBlockStatements(node)
+  } else if (node instanceof ReturnStatement) {
+    const value = evaluator(node.returnValue)
+    return ReturnValue.new(value)
   }
 
   return null
 }
 
-function evalStatements(stmts: Statement[]): Object {
+function evalProgram(program: Program): Object {
   let result: Object
 
-  for (const stmt of stmts) {
+  for (const stmt of program.statements) {
     result = evaluator(stmt)
+    if (result instanceof ReturnValue) {
+      return result.value
+    } else if (result instanceof Error) {
+      return result
+    }
+  }
+
+  return result
+}
+
+function evalBlockStatements(block: BlockStatement): Object {
+  let result: Object
+
+  for (const stmt of block.statements) {
+    result = evaluator(stmt)
+    if (result !== null && result.type() === ObjectTypeTable.RETURN_VALUE_OBJ) {
+      return result
+    }
   }
 
   return result
