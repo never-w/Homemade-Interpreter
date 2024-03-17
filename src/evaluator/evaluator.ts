@@ -1,4 +1,4 @@
-import { ASTNode, Expression, Statement } from '../ast/ast'
+import { ASTNode, Expression } from '../ast/ast'
 import { BlockStatement } from '../ast/blockStatement'
 import { Boolean as BooleanAST } from '../ast/boolean'
 import { CallExpression } from '../ast/callExpression'
