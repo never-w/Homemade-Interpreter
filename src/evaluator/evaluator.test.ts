@@ -4,7 +4,10 @@ import { Object } from '../object/object'
 import { Integer } from '../object/integer'
 import { evaluator } from './evaluator'
 import { Boolean } from '../object/boolean'
+import { Error } from '../object/error'
 import { Null } from '../object/null'
+import { Environment } from '../object/environment'
+import { Function } from '../object/function'
 
 describe('Evaluator', () => {
   it('should evaluate integer expression', () => {
@@ -242,14 +245,94 @@ describe('Evaluator', () => {
       expect(testIntegerObject(evaluated, test.expected)).toEqual(true)
     }
   })
+
+  it('should evaluate errors', () => {
+    const tests = [
+      ['5 + true;', 'type mismatch: INTEGER + BOOLEAN'],
+      ['5 + true; 5;', 'type mismatch: INTEGER + BOOLEAN'],
+      ['-true', 'unknown operator: -BOOLEAN'],
+      ['true + false;', 'unknown operator: BOOLEAN + BOOLEAN'],
+      ['5; true + false; 5', 'unknown operator: BOOLEAN + BOOLEAN'],
+      ['if (10 > 1) { true + false; }', 'unknown operator: BOOLEAN + BOOLEAN'],
+      [
+        `if(10 > 1) {
+        if (10 > 1) {
+          return true + false;
+        }
+        return 1;
+      }`,
+        'unknown operator: BOOLEAN + BOOLEAN',
+      ],
+
+      ['foobar', 'identifier not found: foobar'],
+
+      // [`"Hello" - "World"`, 'unknown operator: STRING - STRING'],
+      // [`{"name": "Monkey"}[fn(x) { x }]`, 'unusable as hash key: FUNCTION'],
+    ]
+
+    for (const [input, expected] of tests) {
+      const evaluated = testEval(input)
+      expect(evaluated instanceof Error).toBeTruthy()
+      const errObj = evaluated as Error
+      expect(errObj.message).toEqual(expected)
+    }
+  })
+
+  it('should evaluate let statements', () => {
+    const tests = [
+      { input: 'let a = 5; a;', expected: 5 },
+      { input: 'let a = 5 * 5; a;', expected: 25 },
+      { input: 'let a = 5; let b = a; b;', expected: 5 },
+      { input: 'let a = 5; let b = a; let c = a + b + 5; c;', expected: 15 },
+    ]
+
+    for (const test of tests) {
+      expect(testIntegerObject(testEval(test.input), test.expected)).toBe(true)
+    }
+  })
+
+  it('should evaluate function object', () => {
+    const input = 'fn(x) { x + 2; };'
+    const evaluated = testEval(input)
+    expect(evaluated instanceof Function).toBe(true)
+    const fn = evaluated as Function
+
+    expect(fn.parameters).toHaveLength(1)
+    expect(fn.parameters[0].string()).toEqual('x')
+    expect(fn.body.string()).toEqual('(x + 2)')
+  })
+
+  it('should evaluate function calls', () => {
+    const tests = [
+      { input: 'let identity = fn(x) { x; }; identity(5);', expected: 5 },
+      {
+        input: 'let identity = fn(x) { return x; }; identity(5);',
+        expected: 5,
+      },
+      { input: 'let double = fn(x) { x * 2; }; double(5);', expected: 10 },
+      { input: 'let add = fn(x, y) { x + y; }; add(5, 5);', expected: 10 },
+      {
+        input: 'let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));',
+        expected: 20,
+      },
+      {
+        input: 'fn(x) { x; }(5)',
+        expected: 5,
+      },
+    ]
+    for (const { input, expected } of tests) {
+      expect(testIntegerObject(testEval(input), expected)).toBe(true)
+    }
+  })
 })
 
 function testEval(input: string) {
   const lexer = Lexer.newLexer(input)
   const parser = Parser.newParser(lexer)
   const program = parser.parseProgram()
+  const environment = Environment.new()
 
-  return evaluator(program)
+  return evaluator(program, environment)
 }
 
 function testIntegerObject(obj: Object, expected: number): boolean {

@@ -2,6 +2,7 @@ import readline from 'readline'
 import { Lexer } from '../lexer/lexer'
 import { Parser } from '../parser/parser'
 import { evaluator } from '../evaluator/evaluator'
+import { Environment } from '../object/environment'
 
 const MONKEY_FACE = `            __,__
    .--.  .-"     "-.  .--.
@@ -15,6 +16,7 @@ const MONKEY_FACE = `            __,__
         '._ '-=-' _.'
            '-----'
 `
+const environment = Environment.new()
 
 const repl = readline.createInterface({
   input: process.stdin,
@@ -32,7 +34,7 @@ repl.on('line', (input) => {
     printParseErrors(parser.getErrors())
   }
 
-  const evaluated = evaluator(program)
+  const evaluated = evaluator(program, environment)
   if (evaluated) {
     console.log(evaluated.inspect())
   }
